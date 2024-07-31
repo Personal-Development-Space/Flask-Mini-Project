@@ -5,7 +5,7 @@ import requests
 import threading
 import json
 
-url = ' https://90c6-115-77-190-72.ngrok-free.app'
+url = 'http://localhost:5000'
 
 app = Flask(__name__)
 
@@ -15,9 +15,13 @@ def monitor_changes():
     with client.watch() as stream:
         for change in stream:
             print(f"Change detected: {change}")
-            requests.post(url, data = json.dumps({"operationType": change['operationType']}), headers= {"Content-Type": "application/json"})
+            if change['operationType'] == 'insert':
+                requests.post(url, data = json.dumps({"operationType": change['operationType'], "name": change['fullDocument']['name'], "link": change['fullDocument']['link'], "time": change['wallTime'].isoformat()}), headers= {"Content-Type": "application/json"})
+            elif change['operationType'] == 'delete':
+                requests.post(url, data = json.dumps({"operationType": change['operationType'], "time": change['wallTime'].isoformat()}), headers= {"Content-Type": "application/json"})
+            elif change['operationType'] == 'update':
+                requests.post(url, data = json.dumps({"operationType": change['operationType'], "time": change['wallTime'].isoformat()}), headers= {"Content-Type": "application/json"})
 
-# Run the monitor_changes function in a separate thread
 thread = threading.Thread(target=monitor_changes)
 thread.start()
 
